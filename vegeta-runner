@@ -15,7 +15,7 @@ class Parser
     args = Options.new
 
     opt_parser = OptionParser.new do |opts|
-      opts.banner = "U  sage: vegeta-runner [options]"
+      opts.banner = "Usage: vegeta-runner [options]"
 
       opts.on("--rate=RATE", "The rate number: requests per second") do |rate|
         args.rate = rate
@@ -45,12 +45,12 @@ class Parser
 end
 
 options = begin
-                Parser.parse ARGV
-              rescue OptionParser::InvalidArgument => e
-                puts "Invalid CLI options are passed! Original exception message: #{e.message}"
-                puts "Please, run `vegeta-runner --help` first to see all available options."
-                exit
-              end
+            Parser.parse ARGV
+          rescue OptionParser::InvalidArgument => e
+            puts "Invalid CLI options are passed! Original exception message: #{e.message}"
+            puts "Please, run `vegeta-runner --help` first to see all available options."
+            exit
+          end
 
 unless options.valid?
   puts "Options validation has failed!"

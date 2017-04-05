@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+
+ROOT_FOLDER = File.expand_path(File.dirname(__FILE__))
+
+require 'optparse'
+
+class Options < Struct.new(:name)
+  def valid?
+    !name.nil?
+  end
+end
+
+class Parser
+  def self.parse(options)
+    args = Options.new
+
+    opt_parser = OptionParser.new do |opts|
+      opts.banner = "Usage: env-gen [options]"
+
+      opts.on("--name=NAME", "The name of environment which you want to create") do |name|
+        args.name = name
+      end
+
+      opts.on("-h", "--help", "Prints this help") do
+        puts opts
+        exit
+      end
+    end
+
+    opt_parser.parse!(options)
+    return args
+  end
+end
+
+options = begin
+            Parser.parse ARGV
+          rescue OptionParser::InvalidArgument => e
+            puts "Invalid CLI options are passed! Original exception message: #{e.message}"
+            puts "Please, run `env-gen --help` first to see all available options."
+            exit
+          end
+
+unless options.valid?
+  puts "Options validation has failed!"
+  puts "Please, run `env-gen --help` first to see all available options."
+  exit 1
+end
+
+require 'fileutils'
+
+ENV_ROOT = File.join(ROOT_FOLDER, 'envs', options.name)
+
+if File.directory?(ENV_ROOT)
+  puts "The directory for environment with name #{options.name} already exists!"
+  puts "Exiting right now! Please, check your envs directory first!"
+  exit 1
+end
+
+TARGETS_PATH = File.join(ENV_ROOT, 'targets')
+OUTPUT_BIN_ROOT = File.join(ENV_ROOT, 'outputs_bin')
+OUTPUT_HTML_ROOT = File.join(ENV_ROOT, 'outputs_html')
+
+FileUtils::mkdir_p OUTPUT_BIN_ROOT
+FileUtils::mkdir_p OUTPUT_HTML_ROOT
+File.open(TARGETS_PATH, "w+") do |file|
+  file.write("GET <YOUR_ENDPOINT_FOR_TEST>")
+end
+
+puts "The environment `#{options.name}` has been created!"
