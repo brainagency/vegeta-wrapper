@@ -1,4 +1,4 @@
-# vegeta-runner
+# vegeta-wrapper
 
 Wrapper for vegeta console utility for load testing.
 
