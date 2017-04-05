@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+
+ROOT_FOLDER = File.expand_path(File.dirname(__FILE__))
+
+require 'optparse'
+
+class Options < Struct.new(:rate, :duration, :env, :open)
+  def valid?
+    !rate.nil? && !duration.nil? && !env.nil?
+  end
+end
+
+class Parser
+  def self.parse(options)
+    args = Options.new
+
+    opt_parser = OptionParser.new do |opts|
+      opts.banner = "U  sage: vegeta-runner [options]"
+
+      opts.on("--rate=RATE", "The rate number: requests per second") do |rate|
+        args.rate = rate
+      end
+
+      opts.on("--duration=DURATION", "The duration of the test") do |duration|
+        args.duration = duration
+      end
+
+      opts.on("--e=ENV", "The environment which you want to test") do |env|
+        args.env = env
+      end
+
+      opts.on("--open=OPEN", TrueClass, "Should the report be opened automatically or not") do |open|
+        args.open = open
+      end
+
+      opts.on("-h", "--help", "Prints this help") do
+        puts opts
+        exit
+      end
+    end
+
+    opt_parser.parse!(options)
+    return args
+  end
+end
+
+options = begin
+                Parser.parse ARGV
+              rescue OptionParser::InvalidArgument => e
+                puts "Invalid CLI options are passed! Original exception message: #{e.message}"
+                puts "Please, run `vegeta-runner --help` first to see all available options."
+                exit
+              end
+
+unless options.valid?
+  puts "Options validation has failed!"
+  puts "Please, run `vegeta-runner --help` first to see all available options."
+  exit 1
+end
+
+ENV_ROOT = File.join(ROOT_FOLDER, 'envs', options.env)
+
+unless File.directory?(ENV_ROOT)
+  puts "No such environment `#{options.env}`! Please, check passed options one time more!"
+  exit 1
+end
+
+TIMESTAMP = Time.now.strftime('%Y-%m-%d_%H-%M-%S')
+RUN_NAME = "#{options.env}-#{options.rate}persec-#{options.duration}-#{TIMESTAMP}"
+
+TARGETS_PATH = File.join(ENV_ROOT, 'targets')
+OUTPUT_BIN_PATH = File.join(ENV_ROOT, 'outputs_bin', RUN_NAME)
+OUTPUT_HTML_PATH = File.join(ENV_ROOT, 'outputs_html', "#{RUN_NAME}.html")
+
+`vegeta -cpus=4 attack -output=#{OUTPUT_BIN_PATH} -rate=#{options.rate} -duration=#{options.duration} -targets=#{TARGETS_PATH}`
+`vegeta report -inputs=#{OUTPUT_BIN_PATH} -reporter=plot > #{OUTPUT_HTML_PATH}`
+
+puts "New report is available here #{OUTPUT_HTML_PATH}"
+
+if options.open
+  `open #{OUTPUT_HTML_PATH}`
+end
